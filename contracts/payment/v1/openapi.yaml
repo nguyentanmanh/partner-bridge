@@ -1,0 +1,511 @@
+openapi: 3.0.3
+info:
+  title: PartnerBridge Canonical Payment API
+  version: 1.0.0
+  description: >-
+    Gateway-independent canonical contract for creating payments and retrieving
+    their status through PartnerBridge.
+tags:
+  - name: Payments
+    description: Create payments and retrieve their canonical status.
+paths:
+  /api/v1/payments:
+    post:
+      tags:
+        - Payments
+      summary: Create a payment
+      description: >-
+        Creates a payment using a supported provider. Reusing an idempotency key
+        with the same request returns the original result; reusing it with a
+        different request returns a conflict.
+      operationId: createPayment
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            examples:
+              providerA:
+                summary: Create a payment through PROVIDER_A
+                value:
+                  providerCode: PROVIDER_A
+                  merchantReference: ORDER-20260918-0001
+                  amount:
+                    value: '100000'
+                    currency: VND
+                  description: Payment for order ORDER-20260918-0001
+      responses:
+        '201':
+          description: Payment created successfully.
+          headers:
+            Request-ID:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                created:
+                  summary: Payment created and awaiting completion
+                  value:
+                    paymentId: 8a4c2468-8ff1-4f99-a49d-4cdcf04e38ee
+                    merchantReference: ORDER-20260918-0001
+                    providerCode: PROVIDER_A
+                    providerTransactionId: PA-93485721
+                    amount:
+                      value: '100000'
+                      currency: VND
+                    status: PENDING
+                    createdAt: '2026-09-18T22:00:00Z'
+                    updatedAt: '2026-09-18T22:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/BusinessValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/InvalidProviderResponse'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+        '504':
+          $ref: '#/components/responses/ProviderTimeout'
+
+  /api/v1/payments/{paymentId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment status
+      description: Retrieves a payment and its current canonical status.
+      operationId: getPaymentById
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Payment found.
+          headers:
+            Request-ID:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                succeeded:
+                  summary: Successfully completed payment
+                  value:
+                    paymentId: 8a4c2468-8ff1-4f99-a49d-4cdcf04e38ee
+                    merchantReference: ORDER-20260918-0001
+                    providerCode: PROVIDER_A
+                    providerTransactionId: PA-93485721
+                    amount:
+                      value: '100000'
+                      currency: VND
+                    status: SUCCEEDED
+                    createdAt: '2026-09-18T22:00:00Z'
+                    updatedAt: '2026-09-18T22:00:03Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/PaymentNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  parameters:
+    RequestId:
+      name: Request-ID
+      in: header
+      required: true
+      description: >-
+        Caller-generated identifier used to correlate the request across
+        PartnerBridge components. It must be non-empty and contain only visible
+        ASCII characters without whitespace.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[!-~]+$'
+      example: req-20260918-7f3b1d
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        Client-generated key that makes payment creation idempotent. A key is
+        scoped to the calling client and must not be reused for a different
+        request payload.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[!-~]+$'
+      example: idem-ORDER-20260918-0001
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      description: PartnerBridge payment identifier.
+      schema:
+        type: string
+        format: uuid
+      example: 8a4c2468-8ff1-4f99-a49d-4cdcf04e38ee
+
+  headers:
+    RequestId:
+      description: Request correlation identifier supplied by the caller.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[!-~]+$'
+      example: req-20260918-7f3b1d
+
+  schemas:
+    Money:
+      type: object
+      additionalProperties: false
+      description: Monetary amount represented without floating-point loss.
+      required:
+        - value
+        - currency
+      properties:
+        value:
+          type: string
+          description: >-
+            Positive decimal value in plain notation. Exponents, signs, and
+            grouping separators are not accepted.
+          pattern: '^(?:0\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(?:\.[0-9]+)?)$'
+          maxLength: 32
+          example: '100000'
+        currency:
+          type: string
+          description: Three-letter uppercase currency code.
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
+          example: VND
+
+    ProviderCode:
+      type: string
+      description: Logical provider identifier exposed by the canonical API.
+      enum:
+        - PROVIDER_A
+        - PROVIDER_B
+      example: PROVIDER_A
+
+    PaymentStatus:
+      type: string
+      description: Canonical payment lifecycle status.
+      enum:
+        - PENDING
+        - SUCCEEDED
+        - FAILED
+      example: PENDING
+
+    CreatePaymentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - providerCode
+        - merchantReference
+        - amount
+      properties:
+        providerCode:
+          $ref: '#/components/schemas/ProviderCode'
+        merchantReference:
+          type: string
+          description: >-
+            Merchant payment reference. It must be unique within the calling
+            client's scope.
+          minLength: 1
+          maxLength: 100
+          pattern: '.*\S.*'
+          example: ORDER-20260918-0001
+        amount:
+          $ref: '#/components/schemas/Money'
+        description:
+          type: string
+          description: Human-readable payment description.
+          minLength: 1
+          maxLength: 255
+          pattern: '.*\S.*'
+          example: Payment for order ORDER-20260918-0001
+
+    PaymentResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - paymentId
+        - merchantReference
+        - providerCode
+        - amount
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+          description: PartnerBridge payment identifier.
+          example: 8a4c2468-8ff1-4f99-a49d-4cdcf04e38ee
+        merchantReference:
+          type: string
+          description: Merchant payment reference from the create request.
+          example: ORDER-20260918-0001
+        providerCode:
+          $ref: '#/components/schemas/ProviderCode'
+        providerTransactionId:
+          type: string
+          description: Provider-assigned transaction identifier, when available.
+          minLength: 1
+          maxLength: 128
+          example: PA-93485721
+        amount:
+          $ref: '#/components/schemas/Money'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Time at which PartnerBridge created the payment.
+          example: '2026-09-18T22:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Time at which the payment was last updated.
+          example: '2026-09-18T22:00:03Z'
+
+    ApiErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        field:
+          type: string
+          description: Request field associated with the error, when applicable.
+          example: amount.value
+        reason:
+          type: string
+          description: Human-readable reason for this error detail.
+          example: must be greater than zero
+
+    ApiError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - traceId
+        - requestId
+        - timestamp
+        - details
+      properties:
+        code:
+          type: string
+          description: Stable PartnerBridge error code.
+          pattern: '^PAY-[A-Z]+-[0-9]{3}$'
+          example: PAY-PAYMENT-001
+        message:
+          type: string
+          description: Short human-readable error summary.
+          example: Payment not found
+        traceId:
+          type: string
+          description: Distributed tracing identifier.
+          example: trace-id
+        requestId:
+          type: string
+          description: Request correlation identifier supplied by the caller.
+          example: request-id
+        timestamp:
+          type: string
+          format: date-time
+          description: Time at which the error response was produced.
+          example: '2026-09-18T22:00:00Z'
+        details:
+          type: array
+          description: Structured validation or diagnostic details; empty if none.
+          items:
+            $ref: '#/components/schemas/ApiErrorDetail'
+
+  responses:
+    BadRequest:
+      description: The request is malformed or fails syntactic validation.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            invalidAmount:
+              summary: Invalid amount format or value
+              value:
+                code: PAY-VALIDATION-001
+                message: Request validation failed
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details:
+                  - field: amount.value
+                    reason: must be greater than zero
+    PaymentNotFound:
+      description: The requested payment does not exist.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            paymentNotFound:
+              summary: Payment was not found
+              value:
+                code: PAY-PAYMENT-001
+                message: Payment not found
+                traceId: trace-id
+                requestId: request-id
+                timestamp: '2026-09-18T22:00:00Z'
+                details: [ ]
+    Conflict:
+      description: >-
+        The merchant reference is duplicated or the idempotency key was reused
+        with a different request.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            duplicateMerchantReference:
+              summary: Merchant reference already exists for the client
+              value:
+                code: PAY-PAYMENT-002
+                message: Merchant reference already exists
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details:
+                  - field: merchantReference
+                    reason: must be unique within the client scope
+            idempotencyConflict:
+              summary: Idempotency key reused with a different request
+              value:
+                code: PAY-IDEMPOTENCY-001
+                message: Idempotency key conflicts with an existing request
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details:
+                  - field: Idempotency-Key
+                    reason: was previously used with a different request payload
+    BusinessValidationFailed:
+      description: The request is valid syntactically but violates a business rule.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            unsupportedCurrency:
+              summary: Currency is not supported for the selected provider
+              value:
+                code: PAY-BUSINESS-001
+                message: Payment failed business validation
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details:
+                  - field: amount.currency
+                    reason: is not supported for the selected provider
+    InvalidProviderResponse:
+      description: The provider returned an invalid or unusable response.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            invalidProviderResponse:
+              summary: Provider response could not be processed
+              value:
+                code: PAY-PROVIDER-002
+                message: Invalid provider response
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details: [ ]
+    ProviderUnavailable:
+      description: The selected provider is temporarily unavailable.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            providerUnavailable:
+              summary: Provider is unavailable
+              value:
+                code: PAY-PROVIDER-003
+                message: Provider unavailable
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details: [ ]
+    ProviderTimeout:
+      description: The selected provider did not respond within the allowed time.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            providerTimeout:
+              summary: Provider request timed out
+              value:
+                code: PAY-PROVIDER-004
+                message: Provider timeout
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details: [ ]
+    InternalError:
+      description: An unexpected internal error occurred.
+      headers:
+        Request-ID:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            internalError:
+              summary: Unexpected internal failure
+              value:
+                code: PAY-INTERNAL-001
+                message: Internal server error
+                traceId: trace-91f0bc
+                requestId: req-20260918-7f3b1d
+                timestamp: '2026-09-18T22:00:00Z'
+                details: [ ]

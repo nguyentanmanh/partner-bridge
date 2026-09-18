@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: payment-integration-service
+  messages:
+    basename: messages
+    fallback-to-system-locale: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+server:
+  shutdown: graceful
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+logging:
+  pattern:
+    level: "%5p [service=payment-integration-service,requestId=%X{requestId:-},traceId=%X{traceId:-}]"
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+logging:
+  level:
+    root: INFO
