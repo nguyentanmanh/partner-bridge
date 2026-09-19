@@ -1,0 +1,44 @@
+services:
+  provider-a:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "9101:8080"
+    volumes:
+      - ./provider-stubs/provider-a/mappings:/home/wiremock/mappings:ro
+      - ./provider-stubs/provider-a/__files:/home/wiremock/__files:ro
+    command:
+      - --global-response-templating
+      - --disable-gzip
+      - --verbose
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
+    networks:
+      - partner-bridge
+
+  provider-b:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "9102:8080"
+    volumes:
+      - ./provider-stubs/provider-b/mappings:/home/wiremock/mappings:ro
+      - ./provider-stubs/provider-b/__files:/home/wiremock/__files:ro
+    command:
+      - --global-response-templating
+      - --disable-gzip
+      - --verbose
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
+    networks:
+      - partner-bridge
+
+networks:
+  partner-bridge:
+    name: partner-bridge

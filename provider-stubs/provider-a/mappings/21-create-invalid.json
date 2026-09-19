@@ -1,0 +1,13 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/payments",
+    "headers": { "X-Api-Key": { "equalTo": "provider-a-local-key" } }
+  },
+  "response": {
+    "status": 400,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "code": "INVALID_REQUEST", "message": "Invalid payment request" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/payment/query",
+    "headers": {
+      "X-Client-Id": { "equalTo": "provider-b-local-client" },
+      "X-Signature": { "matches": "^[A-Za-z0-9._~+/=-]+$" }
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "error": "INVALID_REQUEST", "errorDescription": "Invalid payment request" }
+  }
+}

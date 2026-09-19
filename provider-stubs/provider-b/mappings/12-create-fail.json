@@ -1,0 +1,20 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/payment/create",
+    "headers": {
+      "X-Client-Id": { "equalTo": "provider-b-local-client" },
+      "X-Signature": { "matches": "^[A-Za-z0-9._~+/=-]+$" },
+      "Content-Type": { "contains": "application/json" }
+    },
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.request.orderRef =~ /.*FAIL.*/ && @.request.money.amount =~ /^[0-9]+(?:\\.[0-9]+)?$/ && @.request.money.currencyCode =~ /^[A-Z]{3}$/ && @.request.content =~ /.+/)]" }
+    ]
+  },
+  "response": {
+    "status": 422,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "error": "PAYMENT_REJECTED", "errorDescription": "Payment rejected" }
+  }
+}

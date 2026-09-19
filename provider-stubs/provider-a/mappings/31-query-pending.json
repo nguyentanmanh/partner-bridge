@@ -1,0 +1,18 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1/payments/PA-TXN-PENDING",
+    "headers": { "X-Api-Key": { "equalTo": "provider-a-local-key" } }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "transactionId": "PA-TXN-PENDING",
+      "paymentStatus": "PROCESSING",
+      "amount": 100000,
+      "currency": "VND"
+    }
+  }
+}

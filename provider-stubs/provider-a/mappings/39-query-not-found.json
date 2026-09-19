@@ -1,0 +1,13 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/v1/payments/[^/]+",
+    "headers": { "X-Api-Key": { "equalTo": "provider-a-local-key" } }
+  },
+  "response": {
+    "status": 404,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "code": "NOT_FOUND", "message": "Payment not found" }
+  }
+}

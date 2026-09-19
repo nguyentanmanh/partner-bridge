@@ -1,0 +1,27 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/payment/query",
+    "headers": {
+      "X-Client-Id": { "equalTo": "provider-b-local-client" },
+      "X-Signature": { "matches": "^[A-Za-z0-9._~+/=-]+$" },
+      "Content-Type": { "contains": "application/json" }
+    },
+    "bodyPatterns": [{ "equalToJson": { "referenceNo": "PB-REF-001" } }]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "responseCode": "00",
+      "responseMessage": "Success",
+      "data": {
+        "referenceNo": "PB-REF-001",
+        "status": "S",
+        "amount": "100000",
+        "currencyCode": "VND"
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/payments",
+    "headers": {
+      "X-Api-Key": { "equalTo": "provider-a-local-key" },
+      "Content-Type": { "contains": "application/json" }
+    },
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.merchantRef =~ /.*MALFORMED.*/ && @.amount > 0 && @.currency =~ /^[A-Z]{3}$/ && @.note =~ /.+/)]" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "code": "SUCCESS", "message": "Payment created" }
+  }
+}

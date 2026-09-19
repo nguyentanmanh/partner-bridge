@@ -1,0 +1,26 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/payments",
+    "headers": {
+      "X-Api-Key": { "equalTo": "provider-a-local-key" },
+      "Content-Type": { "contains": "application/json" }
+    },
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.merchantRef =~ /.*SUCCESS.*/ && @.amount > 0 && @.currency =~ /^[A-Z]{3}$/ && @.note =~ /.+/)]" }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "code": "SUCCESS",
+      "message": "Payment created",
+      "transactionId": "PA-TXN-001",
+      "paymentStatus": "COMPLETED",
+      "amount": 100000,
+      "currency": "VND"
+    }
+  }
+}

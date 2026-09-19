@@ -1,0 +1,13 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPathPattern": "/api/payment/(?:create|query)",
+    "headers": { "X-Client-Id": { "absent": true } }
+  },
+  "response": {
+    "status": 401,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "error": "UNAUTHORIZED", "errorDescription": "Missing client ID" }
+  }
+}

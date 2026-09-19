@@ -1,0 +1,27 @@
+{
+  "priority": 2,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/payments",
+    "headers": {
+      "X-Api-Key": { "equalTo": "provider-a-local-key" },
+      "Content-Type": { "contains": "application/json" }
+    },
+    "bodyPatterns": [
+      { "matchesJsonPath": "$[?(@.merchantRef =~ /.*TIMEOUT.*/ && @.amount > 0 && @.currency =~ /^[A-Z]{3}$/ && @.note =~ /.+/)]" }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "fixedDelayMilliseconds": 5500,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "code": "SUCCESS",
+      "message": "Payment created",
+      "transactionId": "PA-TXN-TIMEOUT",
+      "paymentStatus": "PROCESSING",
+      "amount": 100000,
+      "currency": "VND"
+    }
+  }
+}
