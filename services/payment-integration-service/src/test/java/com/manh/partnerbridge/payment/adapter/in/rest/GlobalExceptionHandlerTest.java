@@ -16,6 +16,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import jakarta.servlet.http.HttpServletRequest;
 
 class GlobalExceptionHandlerTest {
@@ -48,6 +49,23 @@ class GlobalExceptionHandlerTest {
         var result = handler.unknown(new IllegalStateException("secret implementation detail"), request);
         assertEquals(500, result.getStatusCode().value());
         assertEquals("Internal server error", result.getBody().message());
+        assertFalse(result.getBody().toString().contains("secret implementation detail"));
+    }
+
+    @Test
+    void malformedRequestUsesPaymentCodeOnlyForPaymentApi() {
+        when(request.getRequestURI()).thenReturn("/api/v1/payments", "/api/v1/items");
+        var failure = new HttpMessageNotReadableException("malformed local test body");
+        assertEquals("PAY-VALIDATION-001", handler.malformedRequest(failure, request).getBody().code());
+        assertEquals("PAY-COMMON-001", handler.malformedRequest(failure, request).getBody().code());
+    }
+
+    @Test
+    void unexpectedPaymentFailureUsesCanonicalPaymentErrorCode() {
+        when(request.getRequestURI()).thenReturn("/api/v1/payments");
+        var result = handler.unknown(new IllegalStateException("secret implementation detail"), request);
+        assertEquals(500, result.getStatusCode().value());
+        assertEquals("PAY-INTERNAL-001", result.getBody().code());
         assertFalse(result.getBody().toString().contains("secret implementation detail"));
     }
 

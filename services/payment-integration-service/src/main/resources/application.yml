@@ -4,6 +4,22 @@ spring:
   messages:
     basename: messages
     fallback-to-system-locale: false
+partnerbridge:
+  client:
+    default-id: ${PARTNERBRIDGE_CLIENT_DEFAULT_ID:local-poc-client}
+  idempotency:
+    retention: ${PARTNERBRIDGE_IDEMPOTENCY_RETENTION:24h}
+  provider-a:
+    base-url: ${PARTNERBRIDGE_PROVIDER_A_BASE_URL:http://localhost:9101}
+    api-key: ${PARTNERBRIDGE_PROVIDER_A_API_KEY:provider-a-local-key}
+    connect-timeout: ${PARTNERBRIDGE_PROVIDER_A_CONNECT_TIMEOUT:2s}
+    response-timeout: ${PARTNERBRIDGE_PROVIDER_A_RESPONSE_TIMEOUT:3s}
+  provider-b:
+    base-url: ${PARTNERBRIDGE_PROVIDER_B_BASE_URL:http://localhost:9102}
+    client-id: ${PARTNERBRIDGE_PROVIDER_B_CLIENT_ID:provider-b-local-client}
+    signature: ${PARTNERBRIDGE_PROVIDER_B_SIGNATURE:local-test-signature}
+    connect-timeout: ${PARTNERBRIDGE_PROVIDER_B_CONNECT_TIMEOUT:2s}
+    response-timeout: ${PARTNERBRIDGE_PROVIDER_B_RESPONSE_TIMEOUT:3s}
 management:
   endpoints:
     web:

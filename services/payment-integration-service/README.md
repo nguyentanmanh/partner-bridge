@@ -64,3 +64,78 @@ tests.
 Before production, add a complete security design, real persistence/client adapters where required, telemetry export,
 secret management, deployment limits, and operational testing. Actuator exposes only health, info, and metrics by
 default.
+
+## Payment POC (bước 5)
+
+Khởi động hai stub từ root repository (`docker compose up -d provider-a provider-b`),
+sau đó trong thư mục service chạy `./mvnw verify` và
+`./mvnw spring-boot:run -Dspring-boot.run.profiles=local`.
+
+Luồng: canonical `POST /api/v1/payments` → application use case → outbound port
+→ adapter PROVIDER_A hoặc PROVIDER_B → canonical `PaymentResponse`. Client không
+thấy payload riêng của provider. `GET /api/v1/payments/{paymentId}` trả snapshot
+in-memory đã tạo; bản POC này chưa polling provider để cập nhật trạng thái.
+
+Các biến môi trường (giá trị mặc định chỉ dành cho local POC):
+
+| Biến | Mặc định |
+| --- | --- |
+| `PARTNERBRIDGE_CLIENT_DEFAULT_ID` | `local-poc-client` |
+| `PARTNERBRIDGE_IDEMPOTENCY_RETENTION` | `24h` |
+| `PARTNERBRIDGE_PROVIDER_A_BASE_URL` | `http://localhost:9101` |
+| `PARTNERBRIDGE_PROVIDER_A_API_KEY` | `provider-a-local-key` |
+| `PARTNERBRIDGE_PROVIDER_A_CONNECT_TIMEOUT` | `2s` |
+| `PARTNERBRIDGE_PROVIDER_A_RESPONSE_TIMEOUT` | `3s` |
+| `PARTNERBRIDGE_PROVIDER_B_BASE_URL` | `http://localhost:9102` |
+| `PARTNERBRIDGE_PROVIDER_B_CLIENT_ID` | `provider-b-local-client` |
+| `PARTNERBRIDGE_PROVIDER_B_SIGNATURE` | `local-test-signature` |
+| `PARTNERBRIDGE_PROVIDER_B_CONNECT_TIMEOUT` | `2s` |
+| `PARTNERBRIDGE_PROVIDER_B_RESPONSE_TIMEOUT` | `3s` |
+
+Ví dụ: thay `PROVIDER_A` bằng `PROVIDER_B`, hoặc đổi reference thành
+`ORDER-PENDING-001`, `ORDER-FAIL-001`, `ORDER-TIMEOUT-001`,
+`ORDER-MALFORMED-001` để thử các nhánh. Mỗi request mới dùng một
+`Idempotency-Key` mới; lặp đúng key và body để kiểm tra replay.
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/payments \
+  -H 'Request-ID: local-req-1' \
+  -H 'Idempotency-Key: local-idem-1' \
+  -H 'Content-Type: application/json' \
+  -d '{"providerCode":"PROVIDER_A","merchantReference":"ORDER-SUCCESS-001","amount":{"value":"100000","currency":"VND"},"description":"Test payment"}'
+```
+
+MVP dùng một logical client scope từ `partnerbridge.client.default-id`, không
+nhận client ID từ header. `merchantReference` và key được scope theo ID đó. Sau
+này, khi có gateway/authentication, scope phải lấy từ trusted identity. Store
+idempotency in-memory có TTL (mặc định 24 giờ, bắt buộc > 0), bắt đầu sau khi xử
+lý xong. Không expire request đang chạy. Reservation cho key và reference được
+giữ trước khi gọi provider; các request cùng key chờ cùng kết quả, trong khi
+payment khác và GET vẫn chạy độc lập.
+
+Timeout (`504`), response hỏng (`502`) và business rejection (`422`) được lưu để
+replay đúng status/body, không gọi provider lần hai. Timeout/response hỏng có
+trạng thái xử lý nội bộ `UNKNOWN`, không phải canonical `FAILED`. Log có
+`callOutcome` và `paymentStatus` riêng. Khi replay lỗi, body giữ nguyên message,
+traceId, requestId và timestamp lần đầu; response header Request-ID vẫn theo
+request hiện tại. Không có retry tự động hoặc reconciliation.
+
+Reference reservation không hết hạn theo response TTL. Sau TTL, cùng reference
+vẫn trả `409`. Dữ liệu reference/payment tăng theo vòng đời process; restart mất
+tất cả. Chỉ hỗ trợ một instance POC, chưa phải production. Các quyết định chi
+tiết nằm trong [contract README](../../contracts/payment/v1/README.md).
+
+Regression tests trong `./mvnw verify` dùng provider HTTP local riêng và Clock có
+thể điều khiển; không cần hai Docker stub. Chạy E2E qua hai WireMock thật từ root
+repository khi service đã hoạt động:
+
+```bash
+python3 tests/e2e/payment-api-regression.py --base-url http://localhost:8080
+```
+
+Harness chỉ dùng Python standard library, dữ liệu giả có reference/Request-ID
+riêng cho mỗi lần chạy. Nó kiểm tra concurrent + sequential replay cho SUCCESS,
+PENDING, FAIL, MALFORMED, TIMEOUT trên cả A/B, validation và request độc lập/GET;
+đếm create calls từ WireMock journal, không xóa journal. Mỗi dòng output JSON
+chứa request/response hoặc assertion và số provider calls; sai assertion trả
+exit code khác 0. Giữ cấu hình timeout mặc định 3s cho bài E2E này (stub delay 5.5s).
