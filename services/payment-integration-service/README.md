@@ -67,6 +67,21 @@ default.
 
 ## Payment POC (bước 5)
 
+Khi chạy qua Kong ở Step 6, dùng `docker compose up -d --build` tại root và gọi
+`http://localhost:8000/api/v1/payments`; xem [gateway README](../../gateways/kong/README.md).
+Compose kích hoạt profile `gateway`, bắt buộc trusted identity do Kong đặt và
+không publish backend port. GET payment cũng kiểm tra owner scope và trả `404`
+cho consumer khác. Hướng dẫn gọi trực tiếp dưới đây dành riêng cho
+local/direct development profile.
+
+Profile riêng nằm ở `src/main/resources/application-gateway.yml`. Outbound
+provider dùng hai Spring HTTP Service interfaces riêng, mỗi interface được
+back bởi RestClient và JDK HTTP/1.1 client. Base URL, credential, connect timeout
+và response timeout bind từ `partnerbridge.provider-a`/`provider-b` vào typed
+properties; không retry tự động. Adapter phân loại raw HTTP status/body trước
+khi mapper chuyển provider DTO sang canonical result. Log chỉ ghi provider,
+Request-ID, duration và outcome, không ghi credential hay raw response.
+
 Khởi động hai stub từ root repository (`docker compose up -d provider-a provider-b`),
 sau đó trong thư mục service chạy `./mvnw verify` và
 `./mvnw spring-boot:run -Dspring-boot.run.profiles=local`.

@@ -27,7 +27,7 @@ public final class PaymentService implements PaymentUseCase {
     private final Object reservationLock = new Object();
     private final Map<ScopedKey, Entry> idempotency = new HashMap<>();
     private final Set<ScopedKey> references = new HashSet<>();
-    private final Map<String, Payment> payments = new ConcurrentHashMap<>();
+    private final Map<String, OwnedPayment> payments = new ConcurrentHashMap<>();
     private final Clock clock;
     private final Duration retention;
     private final PaymentMessagesPort messages;
@@ -65,14 +65,15 @@ public final class PaymentService implements PaymentUseCase {
                 references.add(reference);
             }
         }
-        if (owner) process(entry, provider, command, context);
+        if (owner) process(entry, provider, command, clientId, context);
         // Waiting is per reservation. Independent creates and GET do not acquire this future.
         Outcome result = entry.result.join();
         if (result.failure != null) throw new PaymentException(result.failure);
         return result.payment;
     }
 
-    private void process(Entry entry, PaymentProviderPort provider, CreatePaymentCommand command, PaymentRequestContext context) {
+    private void process(Entry entry, PaymentProviderPort provider, CreatePaymentCommand command, String clientId,
+                         PaymentRequestContext context) {
         Outcome outcome;
         ProcessingState state;
         Instant started = clock.instant();
@@ -80,7 +81,7 @@ public final class PaymentService implements PaymentUseCase {
             PaymentProviderPort.ProviderResult result = provider.create(command, context.requestId());
             Payment payment = new Payment(UUID.randomUUID().toString(), command.merchantReference(), command.providerCode(),
                 result.transactionId(), command.amount(), result.status(), started, clock.instant());
-            payments.put(payment.paymentId(), payment);
+            payments.put(payment.paymentId(), new OwnedPayment(clientId, payment));
             outcome = new Outcome(payment, null);
             state = ProcessingState.COMPLETED;
         } catch (RuntimeException exception) {
@@ -105,16 +106,17 @@ public final class PaymentService implements PaymentUseCase {
     }
 
     @Override
-    public Payment get(String paymentId) {
-        Payment payment = payments.get(paymentId);
-        if (payment == null) throw new PaymentException(PaymentErrorCode.NOT_FOUND);
-        return payment;
+    public Payment get(String paymentId, String clientId) {
+        OwnedPayment owned = payments.get(paymentId);
+        if (owned == null || !owned.clientId.equals(clientId)) throw new PaymentException(PaymentErrorCode.NOT_FOUND);
+        return owned.payment;
     }
 
     /** Internal state is deliberately independent of canonical PaymentStatus. */
     private enum ProcessingState { IN_FLIGHT, COMPLETED, UNKNOWN }
     private record ScopedKey(String clientId, String value) {}
     private record Outcome(Payment payment, PaymentFailure failure) {}
+    private record OwnedPayment(String clientId, Payment payment) {}
 
     private static final class Entry {
         private final CreatePaymentCommand command;

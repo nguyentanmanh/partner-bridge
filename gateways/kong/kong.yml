@@ -1,0 +1,61 @@
+_format_version: "3.0"
+
+services:
+  - name: payment-integration-service
+    url: http://payment-integration-service:8080
+    connect_timeout: 2000
+    read_timeout: 10000
+    write_timeout: 10000
+    retries: 0
+    routes:
+      - name: canonical-payment-v1
+        paths:
+          - /api/v1/payments
+        methods:
+          - GET
+          - POST
+        strip_path: false
+        preserve_host: false
+
+consumers:
+  - username: partner-a
+    custom_id: partner-a
+    keyauth_credentials:
+      - key: local-poc-partner-a-key
+  - username: partner-b
+    custom_id: partner-b
+    keyauth_credentials:
+      - key: local-poc-partner-b-key
+
+plugins:
+  - name: correlation-id
+    route: canonical-payment-v1
+    config:
+      header_name: Request-ID
+      generator: uuid
+      echo_downstream: true
+  - name: key-auth
+    route: canonical-payment-v1
+    config:
+      key_names:
+        - X-Api-Key
+      key_in_header: true
+      key_in_query: false
+      key_in_body: false
+      hide_credentials: true
+  - name: request-transformer
+    route: canonical-payment-v1
+    config:
+      remove:
+        headers:
+          - X-Authenticated-Client-Id
+          - X-Client-Id
+      add:
+        headers:
+          - 'X-Authenticated-Client-Id:$(headers["X-Consumer-Custom-ID"])'
+  - name: rate-limiting
+    route: canonical-payment-v1
+    config:
+      minute: 60
+      limit_by: consumer
+      policy: local

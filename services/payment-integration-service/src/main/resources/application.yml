@@ -7,6 +7,7 @@ spring:
 partnerbridge:
   client:
     default-id: ${PARTNERBRIDGE_CLIENT_DEFAULT_ID:local-poc-client}
+    trusted-identity-required: false
   idempotency:
     retention: ${PARTNERBRIDGE_IDEMPOTENCY_RETENTION:24h}
   provider-a:

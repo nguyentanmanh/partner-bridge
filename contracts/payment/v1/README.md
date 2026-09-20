@@ -53,6 +53,11 @@ là business validation và có thể trả về HTTP `422`.
 - Trong MVP, client scope lấy từ `partnerbridge.client.default-id`, mặc định
   `local-poc-client`; không nhận client ID từ header tùy ý. Khi có authentication,
   scope phải lấy từ trusted identity do gateway truyền xuống.
+- Step 6 gateway profile lấy scope từ `X-Authenticated-Client-Id` do gateway
+  thiết lập sau authentication; thiếu header này bị từ chối. Default client chỉ
+  còn áp dụng cho local/direct development, không cho Compose gateway profile.
+- Trong gateway profile, GET payment cũng chỉ trả payment thuộc client scope đã
+  xác thực; payment thuộc client khác trả `404` để không lộ dữ liệu.
 - Reservation cho `(client scope, key)` và `(client scope, merchantReference)`
   được giữ nguyên tử trước khi gọi provider. Cùng reference nhưng key khác trả
   `409`, kể cả khi request trước còn xử lý hoặc chưa xác định kết quả.

@@ -6,5 +6,5 @@ import com.manh.partnerbridge.payment.domain.model.Payment;
 
 public interface PaymentUseCase {
     Payment create(CreatePaymentCommand command, String clientId, String idempotencyKey, PaymentRequestContext context);
-    Payment get(String paymentId);
+    Payment get(String paymentId, String clientId);
 }

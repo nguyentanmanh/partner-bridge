@@ -1,0 +1,3 @@
+partnerbridge:
+  client:
+    trusted-identity-required: true

@@ -53,7 +53,9 @@ class PaymentServiceTest {
         var service = service(c -> success());
         var first = service.create(command("ORDER-1"), "client", "key", context("first"));
         assertEquals(first, service.create(command("ORDER-1"), "client", "key", context("replay")));
-        assertEquals(first, service.get(first.paymentId()));
+        assertEquals(first, service.get(first.paymentId(), "client"));
+        assertEquals(PaymentErrorCode.NOT_FOUND, assertThrows(PaymentException.class,
+            () -> service.get(first.paymentId(), "other-client")).errorCode());
         assertEquals(PaymentErrorCode.IDEMPOTENCY_CONFLICT, assertThrows(PaymentException.class,
             () -> service.create(command("ORDER-2"), "client", "key", context("conflict"))).errorCode());
         assertEquals(PaymentErrorCode.DUPLICATE_REFERENCE, assertThrows(PaymentException.class,
@@ -117,7 +119,7 @@ class PaymentServiceTest {
             try {
                 var slow = executor.submit(() -> service.create(command("SLOW"), "client", "slow", context("slow")));
                 await(entered);
-                assertEquals(existing, executor.submit(() -> service.get(existing.paymentId())).get(1, TimeUnit.SECONDS));
+                assertEquals(existing, executor.submit(() -> service.get(existing.paymentId(), "client")).get(1, TimeUnit.SECONDS));
                 assertNotNull(executor.submit(() -> service.create(command("FAST"), "client", "fast", context("fast"))).get(1, TimeUnit.SECONDS));
                 assertFalse(slow.isDone());
                 release.countDown();
