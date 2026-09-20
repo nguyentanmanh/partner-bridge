@@ -4,6 +4,10 @@
 - [Local payment provider stubs](provider-stubs/README.md)
 - [Kong Gateway DB-less POC](gateways/kong/README.md)
 
+## Architecture Documents
+
+- [PartnerBridge architecture](docs/architecture/README.md)
+
 Step 6 flow: Client → Kong (`localhost:8000`) → payment-integration-service →
 PROVIDER_A / PROVIDER_B. Kong authenticates, sets trusted consumer identity,
 correlates requests and rate-limits; backend still owns canonical validation,
