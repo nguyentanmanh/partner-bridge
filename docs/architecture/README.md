@@ -16,5 +16,6 @@ PartnerBridge cho client một Payment API canonical, che khác biệt giữa ha
 | [Quality attributes](quality-attributes.md) | Scenario, bằng chứng và trade-off |
 | [Limitations and roadmap](limitations-and-roadmap.md) | Current gaps và đề xuất tiếp theo |
 | [Architecture decisions](adr/README.md) | Sáu quyết định đã triển khai |
+| [Kong onboarding](../onboarding/how-kong-works.md) | Giải thích gateway cho developer mới |
 
 Nguồn chuẩn: [OpenAPI](../../contracts/payment/v1/openapi.yaml), [Compose](../../compose.yaml), [Kong declarative config](../../gateways/kong/kong.yml) và [service source](../../services/payment-integration-service/README.md). Các diagram dưới đây mô tả **current state**, trừ nơi ghi rõ roadmap.

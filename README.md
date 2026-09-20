@@ -8,6 +8,10 @@
 
 - [PartnerBridge architecture](docs/architecture/README.md)
 
+## Onboarding
+
+- [Kong hoạt động thế nào trong PartnerBridge?](docs/onboarding/how-kong-works.md)
+
 Step 6 flow: Client → Kong (`localhost:8000`) → payment-integration-service →
 PROVIDER_A / PROVIDER_B. Kong authenticates, sets trusted consumer identity,
 correlates requests and rate-limits; backend still owns canonical validation,
