@@ -1,0 +1,93 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "sum(rate(kong_http_requests_total[1m]))", "legendFormat": "requests/s", "range": true, "refId": "A"}],
+      "title": "Request rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "100 * sum(rate(kong_http_requests_total{code=~\"5..\"}[5m])) / clamp_min(sum(rate(kong_http_requests_total[5m])), 0.001)", "legendFormat": "5xx %", "range": true, "refId": "A"}],
+      "title": "5xx error rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "histogram_quantile(0.95, sum(rate(kong_request_latency_ms_bucket[5m])) by (le))", "legendFormat": "P95", "range": true, "refId": "A"}],
+      "title": "P95 total request latency",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "histogram_quantile(0.95, sum(rate(kong_upstream_latency_ms_bucket[5m])) by (le))", "legendFormat": "P95", "range": true, "refId": "A"}],
+      "title": "P95 upstream latency",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 5},
+      "id": 5,
+      "options": {"legend": {"calcs": [], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"editorMode": "code", "expr": "sum(rate(kong_http_requests_total[1m])) by (code)", "legendFormat": "HTTP {{code}}", "range": true, "refId": "A"}],
+      "title": "HTTP responses by status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 5},
+      "id": 6,
+      "options": {"legend": {"calcs": [], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"editorMode": "code", "expr": "histogram_quantile(0.95, sum(rate(kong_request_latency_ms_bucket[5m])) by (le))", "legendFormat": "total request P95", "range": true, "refId": "A"},
+        {"editorMode": "code", "expr": "histogram_quantile(0.95, sum(rate(kong_upstream_latency_ms_bucket[5m])) by (le))", "legendFormat": "upstream P95", "range": true, "refId": "B"},
+        {"editorMode": "code", "expr": "histogram_quantile(0.95, sum(rate(kong_kong_latency_ms_bucket[5m])) by (le))", "legendFormat": "Kong P95", "range": true, "refId": "C"}
+      ],
+      "title": "P95 latency breakdown",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"mappings": [{"options": {"0": {"color": "red", "text": "UNHEALTHY"}, "1": {"color": "green", "text": "HEALTHY"}}, "type": "value"}], "min": 0, "max": 1}, "overrides": []},
+      "gridPos": {"h": 7, "w": 24, "x": 0, "y": 14},
+      "id": 7,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "horizontal", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto", "wideLayout": true},
+      "targets": [{"editorMode": "code", "expr": "kong_upstream_target_health{upstream=\"payment-observability-upstream\",state=\"healthy\"}", "legendFormat": "{{target}}", "range": true, "refId": "A"}],
+      "title": "Upstream target health",
+      "type": "stat"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["kong", "partner-bridge", "learning"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PartnerBridge - Kong Observability Lab",
+  "uid": "partnerbridge-kong-observability",
+  "version": 1
+}

@@ -1,0 +1,113 @@
+_format_version: "3.0"
+
+upstreams:
+  - name: payment-lab-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        type: http
+        http_path: /actuator/health
+        timeout: 1
+        concurrency: 2
+        healthy:
+          interval: 5
+          successes: 1
+          http_statuses:
+            - 200
+        unhealthy:
+          interval: 5
+          http_failures: 2
+          tcp_failures: 2
+          timeouts: 2
+          http_statuses:
+            - 429
+            - 500
+            - 501
+            - 502
+            - 503
+            - 504
+            - 505
+    targets:
+      - target: payment-lab-a:8080
+        weight: 100
+      - target: payment-lab-b:8080
+        weight: 100
+
+services:
+  - name: payment-lab-service
+    host: payment-lab-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 2000
+    read_timeout: 10000
+    write_timeout: 10000
+    retries: 0
+    routes:
+      - name: payment-lab-route
+        paths:
+          - /api/v1/payments
+        methods:
+          - GET
+          - POST
+        strip_path: false
+        preserve_host: false
+
+  - name: payment-lab-instance-service
+    host: payment-lab-upstream
+    port: 8080
+    protocol: http
+    path: /actuator/info
+    connect_timeout: 2000
+    read_timeout: 2000
+    write_timeout: 2000
+    retries: 0
+    routes:
+      - name: payment-lab-instance-route
+        paths:
+          - /lab/instance
+        methods:
+          - GET
+        strip_path: true
+        preserve_host: false
+
+consumers:
+  - username: load-balancing-student
+    custom_id: load-balancing-student
+    keyauth_credentials:
+      - key: load-balancing-lab-key
+
+plugins:
+  - name: correlation-id
+    route: payment-lab-route
+    config:
+      header_name: Request-ID
+      generator: uuid
+      echo_downstream: true
+
+  - name: key-auth
+    route: payment-lab-route
+    config:
+      key_names:
+        - X-Api-Key
+      key_in_header: true
+      key_in_query: false
+      key_in_body: false
+      hide_credentials: true
+
+  - name: request-transformer
+    route: payment-lab-route
+    config:
+      remove:
+        headers:
+          - X-Authenticated-Client-Id
+          - X-Client-Id
+      add:
+        headers:
+          - 'X-Authenticated-Client-Id:$(headers["X-Consumer-Custom-ID"])'
+
+  - name: rate-limiting
+    route: payment-lab-route
+    config:
+      minute: 60
+      limit_by: consumer
+      policy: local

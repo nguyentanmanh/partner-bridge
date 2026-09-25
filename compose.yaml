@@ -43,9 +43,15 @@ services:
     build:
       context: ./services/payment-integration-service
     environment:
+    # port mapping debug
+      JAVA_TOOL_OPTIONS: >
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       SPRING_PROFILES_ACTIVE: gateway
       PARTNERBRIDGE_PROVIDER_A_BASE_URL: http://provider-a:8080
       PARTNERBRIDGE_PROVIDER_B_BASE_URL: http://provider-b:8080
+    # port mapping debug
+    ports:
+      - "5005:5005"
     depends_on:
       provider-a:
         condition: service_healthy

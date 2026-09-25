@@ -1,0 +1,128 @@
+_format_version: "3.0"
+
+upstreams:
+  - name: payment-observability-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        type: http
+        http_path: /actuator/health
+        timeout: 1
+        concurrency: 2
+        healthy:
+          interval: 5
+          successes: 1
+          http_statuses:
+            - 200
+        unhealthy:
+          interval: 5
+          http_failures: 2
+          tcp_failures: 2
+          timeouts: 2
+          http_statuses:
+            - 429
+            - 500
+            - 501
+            - 502
+            - 503
+            - 504
+            - 505
+    targets:
+      - target: payment-observability-a:8080
+        weight: 100
+      - target: payment-observability-b:8080
+        weight: 100
+
+services:
+  - name: payment-observability-service
+    host: payment-observability-upstream
+    port: 8080
+    protocol: http
+    connect_timeout: 2000
+    read_timeout: 10000
+    write_timeout: 10000
+    retries: 0
+    routes:
+      - name: payment-observability-route
+        paths:
+          - /api/v1/payments
+        methods:
+          - GET
+          - POST
+        strip_path: false
+        preserve_host: false
+
+  - name: payment-observability-instance-service
+    host: payment-observability-upstream
+    port: 8080
+    protocol: http
+    path: /actuator/info
+    connect_timeout: 2000
+    read_timeout: 2000
+    write_timeout: 2000
+    retries: 0
+    routes:
+      - name: payment-observability-instance-route
+        paths:
+          - /observability/instance
+        methods:
+          - GET
+        strip_path: true
+        preserve_host: false
+
+consumers:
+  - username: observability-student
+    custom_id: observability-student
+    keyauth_credentials:
+      - key: observability-lab-key
+
+plugins:
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+
+  - name: file-log
+    config:
+      path: /dev/stdout
+      reopen: true
+      custom_fields_by_lua:
+        request_id: return kong.request.get_header("Request-ID")
+
+  - name: correlation-id
+    route: payment-observability-route
+    config:
+      header_name: Request-ID
+      generator: uuid
+      echo_downstream: true
+
+  - name: key-auth
+    route: payment-observability-route
+    config:
+      key_names:
+        - X-Api-Key
+      key_in_header: true
+      key_in_query: false
+      key_in_body: false
+      hide_credentials: true
+
+  - name: request-transformer
+    route: payment-observability-route
+    config:
+      remove:
+        headers:
+          - X-Authenticated-Client-Id
+          - X-Client-Id
+      add:
+        headers:
+          - 'X-Authenticated-Client-Id:$(headers["X-Consumer-Custom-ID"])'
+
+  - name: rate-limiting
+    route: payment-observability-route
+    config:
+      minute: 60
+      limit_by: consumer
+      policy: local

@@ -10,6 +10,7 @@ import com.manh.partnerbridge.payment.domain.model.Money;
 import com.manh.partnerbridge.payment.domain.model.Payment;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @Validated
 @RequestMapping("/api/v1/payments")
@@ -47,7 +49,15 @@ public class PaymentController {
         @RequestHeader("Request-ID") @Pattern(regexp = "^[!-~]{1,128}$") String requestId,
         @RequestHeader("Idempotency-Key") @Pattern(regexp = "^[!-~]{1,128}$") String key,
         @RequestHeader(value = "X-Authenticated-Client-Id", required = false) String authenticatedClientId,
-        @Valid @RequestBody CreatePaymentRequest request) {
+        @Valid @RequestBody CreatePaymentRequest request)
+    {
+        log.info(
+            "Received create payment request requestId={}, clientId={}, merchantReference={}",
+            requestId,
+            clientId,
+            request.merchantReference()
+        );
+
         String scope = clientScope(authenticatedClientId);
         Payment payment = useCase.create(new CreatePaymentCommand(request.providerCode(),
                 request.merchantReference(),
