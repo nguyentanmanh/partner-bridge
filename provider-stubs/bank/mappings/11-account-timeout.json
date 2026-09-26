@@ -1,0 +1,5 @@
+{
+  "priority": 1,
+  "request": { "method": "GET", "urlPath": "/bank/v1/accounts/ACC-TIMEOUT" },
+  "response": { "status": 200, "fixedDelayMilliseconds": 4000, "jsonBody": { "accountNumber": "ACC-TIMEOUT" } }
+}

@@ -1,0 +1,33 @@
+services:
+  bank-provider:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "9103:8080"
+    volumes:
+      - ./provider-stubs/bank/mappings:/home/wiremock/mappings:ro
+    command: ["--disable-gzip", "--verbose"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+
+  banking-integration-service:
+    build:
+      context: ./services/banking-integration-service
+    environment:
+      PARTNERBRIDGE_BANK_BASE_URL: http://bank-provider:8080
+      PARTNERBRIDGE_BANK_API_KEY: bank-local-key
+      PARTNERBRIDGE_BANK_CONNECT_TIMEOUT: 1s
+      PARTNERBRIDGE_BANK_RESPONSE_TIMEOUT: 2s
+    ports:
+      - "8082:8080"
+    depends_on:
+      bank-provider:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 20s

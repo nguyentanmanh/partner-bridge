@@ -1,0 +1,9 @@
+{
+  "priority": 10,
+  "request": { "method": "POST", "urlPath": "/bank/v1/transfers" },
+  "response": {
+    "status": 422,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "code": "TRANSFER_REJECTED", "message": "Insufficient funds" }
+  }
+}

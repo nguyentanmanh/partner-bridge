@@ -1,0 +1,19 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/bank/v1/accounts/ACC-001",
+    "headers": { "X-Bank-Api-Key": { "equalTo": "bank-local-key" } }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "accountNumber": "ACC-001",
+      "customerName": "Nguyen Van A",
+      "availableBalance": 2500000.00,
+      "currency": "VND",
+      "status": "ACTIVE"
+    }
+  }
+}

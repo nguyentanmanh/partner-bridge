@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: banking-integration-service
+  messages:
+    basename: messages
+    fallback-to-system-locale: false
+partnerbridge:
+  bank:
+    base-url: ${PARTNERBRIDGE_BANK_BASE_URL:http://localhost:9103}
+    api-key: ${PARTNERBRIDGE_BANK_API_KEY:bank-local-key}
+    connect-timeout: ${PARTNERBRIDGE_BANK_CONNECT_TIMEOUT:1s}
+    response-timeout: ${PARTNERBRIDGE_BANK_RESPONSE_TIMEOUT:2s}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+server:
+  shutdown: graceful
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+logging:
+  pattern:
+    level: "%5p [service=banking-integration-service,requestId=%X{requestId:-},traceId=%X{traceId:-}]"
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+logging:
+  level:
+    root: INFO

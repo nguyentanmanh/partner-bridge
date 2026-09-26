@@ -1,6 +1,7 @@
 # PartnerBridge
 
 - [Canonical Payment API v1](contracts/payment/v1/README.md)
+- [Canonical Banking API v1](contracts/banking/v1/README.md)
 - [Local payment provider stubs](provider-stubs/README.md)
 - [Kong Gateway DB-less POC](gateways/kong/README.md)
 

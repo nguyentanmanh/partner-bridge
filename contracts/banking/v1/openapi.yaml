@@ -1,0 +1,263 @@
+openapi: 3.0.3
+info:
+  title: PartnerBridge Banking API
+  version: 1.0.0
+  description: Canonical API for account lookup and bank transfer creation.
+servers:
+  - url: http://localhost:8082
+    description: Local POC
+tags:
+  - name: Accounts
+  - name: Transfers
+paths:
+  /api/v1/accounts/{accountId}:
+    get:
+      tags: [Accounts]
+      operationId: getBankAccount
+      summary: Get a bank account
+      description: Retrieves canonical account information from the configured bank provider.
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountId
+          in: path
+          required: true
+          description: Bank account identifier.
+          schema:
+            type: string
+            minLength: 1
+          example: ACC-001
+      responses:
+        "200":
+          description: Account found.
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+              example:
+                accountId: ACC-001
+                holderName: Nguyen Van A
+                balance: 2500000.00
+                currency: VND
+                status: ACTIVE
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Account not found (`BNK-ACCOUNT-001`).
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
+  /api/v1/transfers:
+    post:
+      tags: [Transfers]
+      operationId: createBankTransfer
+      summary: Create a bank transfer
+      description: Validates a canonical transfer request and submits it to the configured bank provider.
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransferRequest"
+            example:
+              fromAccount: ACC-001
+              toAccount: ACC-002
+              amount: 100000
+              currency: VND
+              reference: ORDER-SUCCESS-001
+      responses:
+        "201":
+          description: Transfer accepted by the bank.
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankTransfer"
+              example:
+                transferId: BANK-TXN-001
+                status: COMPLETED
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          description: Transfer rejected by the bank (`BNK-TRANSFER-001`).
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
+components:
+  parameters:
+    RequestId:
+      name: Request-ID
+      in: header
+      required: false
+      description: Correlation identifier. The service generates one when omitted.
+      schema:
+        type: string
+        minLength: 1
+      example: BANK-REQ-001
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: Language used for error messages.
+      schema:
+        type: string
+        enum: [en, vi]
+      example: vi
+
+  headers:
+    RequestId:
+      description: Correlation identifier used for this request.
+      schema:
+        type: string
+
+  schemas:
+    BankAccount:
+      type: object
+      additionalProperties: false
+      required: [accountId, holderName, balance, currency, status]
+      properties:
+        accountId:
+          type: string
+        holderName:
+          type: string
+        balance:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        status:
+          type: string
+
+    CreateTransferRequest:
+      type: object
+      additionalProperties: false
+      required: [fromAccount, toAccount, amount, currency, reference]
+      properties:
+        fromAccount:
+          type: string
+          minLength: 1
+        toAccount:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        reference:
+          type: string
+          minLength: 1
+
+    BankTransfer:
+      type: object
+      additionalProperties: false
+      required: [transferId, status]
+      properties:
+        transferId:
+          type: string
+        status:
+          type: string
+
+    ApiErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [field, reason]
+      properties:
+        field:
+          type: string
+        reason:
+          type: string
+
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [code, message, traceId, requestId, timestamp, details]
+      properties:
+        code:
+          type: string
+          example: BNK-ACCOUNT-001
+        message:
+          type: string
+          example: Bank account not found
+        traceId:
+          type: string
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiErrorDetail"
+
+  responses:
+    BadRequest:
+      description: Request validation failed (`BNK-COMMON-001`).
+      headers:
+        Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    BadGateway:
+      description: Bank returned an invalid response (`BNK-INTEGRATION-003`).
+      headers:
+        Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ServiceUnavailable:
+      description: Bank is unavailable (`BNK-INTEGRATION-002`).
+      headers:
+        Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    GatewayTimeout:
+      description: Bank timed out (`BNK-INTEGRATION-001`).
+      headers:
+        Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"

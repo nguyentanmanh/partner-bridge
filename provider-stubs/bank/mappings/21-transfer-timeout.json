@@ -1,0 +1,9 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/bank/v1/transfers",
+    "bodyPatterns": [{ "matchesJsonPath": "$[?(@.clientReference =~ /.*TIMEOUT.*/)]" }]
+  },
+  "response": { "status": 201, "fixedDelayMilliseconds": 4000, "jsonBody": { "transactionId": "LATE" } }
+}
