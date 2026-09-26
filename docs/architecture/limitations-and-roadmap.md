@@ -11,7 +11,12 @@
 
 ## TAD status (research, not runtime)
 
-[Step 7 evaluation](../tad-evaluation.md) ghi TAD build pass nhưng baseline full test và lint còn lỗi. Không tìm thấy Kong connector; `packages/api/gateway` là RPC nội bộ của TAD, **không phải** API Gateway adapter. Kong DB-less Admin API không hỗ trợ entity CRUD; use case OpenAPI → TAD plan/diff → Kong declarative config chưa được triển khai hoặc chứng minh. TAD không là runtime dependency của PartnerBridge.
+[Kết quả đánh giá TAD](../tad-evaluation.md) ghi nhận build pass, nhưng full test
+và lint của baseline vẫn còn lỗi. Không tìm thấy Kong connector;
+`packages/api/gateway` là RPC nội bộ của TAD, **không phải** API Gateway adapter.
+Kong DB-less Admin API không hỗ trợ entity CRUD; luồng OpenAPI → TAD plan/diff
+→ Kong declarative config chưa được triển khai hoặc kiểm chứng. TAD không phải
+runtime dependency của PartnerBridge.
 
 ## Proposed roadmap — chưa triển khai
 

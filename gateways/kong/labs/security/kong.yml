@@ -1,0 +1,76 @@
+_format_version: "3.0"
+
+services:
+  - name: payment-security-service
+    url: http://payment-security-lab:8080
+    connect_timeout: 2000
+    read_timeout: 10000
+    write_timeout: 10000
+    retries: 0
+    routes:
+      - name: payment-security-route
+        paths:
+          - /api/v1/payments
+        methods:
+          - GET
+          - POST
+        strip_path: false
+        preserve_host: false
+
+consumers:
+  - username: partner-a
+    custom_id: partner-a
+    keyauth_credentials:
+      - key: security-partner-a-key
+    acls:
+      - group: payment-clients
+
+  - username: partner-b
+    custom_id: partner-b
+    keyauth_credentials:
+      - key: security-partner-b-key
+    acls:
+      - group: payment-clients
+
+  - username: audit-reader
+    custom_id: audit-reader
+    keyauth_credentials:
+      - key: security-audit-reader-key
+    acls:
+      - group: audit-only
+
+plugins:
+  - name: correlation-id
+    route: payment-security-route
+    config:
+      header_name: Request-ID
+      generator: uuid
+      echo_downstream: true
+
+  - name: key-auth
+    route: payment-security-route
+    config:
+      key_names:
+        - X-Api-Key
+      key_in_header: true
+      key_in_query: false
+      key_in_body: false
+      hide_credentials: true
+
+  - name: acl
+    route: payment-security-route
+    config:
+      allow:
+        - payment-clients
+      hide_groups_header: true
+
+  - name: request-transformer
+    route: payment-security-route
+    config:
+      remove:
+        headers:
+          - X-Authenticated-Client-Id
+          - X-Client-Id
+      add:
+        headers:
+          - 'X-Authenticated-Client-Id:$(headers["X-Consumer-Custom-ID"])'

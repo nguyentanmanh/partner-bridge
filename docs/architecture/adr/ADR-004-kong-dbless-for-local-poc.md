@@ -21,4 +21,4 @@ Kong database mode/PostgreSQL: hỗ trợ quản lý entity động nhưng tăng
 
 ## Evidence in repository
 
-[Compose](../../../compose.yaml), [Kong YAML](../../../gateways/kong/kong.yml), [gateway runbook](../../../gateways/kong/README.md), [Step 7 DB-less 405 observation](../../tad-evaluation.md).
+[Compose](../../../compose.yaml), [Kong YAML](../../../gateways/kong/kong.yml), [gateway runbook](../../../gateways/kong/README.md), [kết quả kiểm tra DB-less Admin API](../../tad-evaluation.md).

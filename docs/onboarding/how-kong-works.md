@@ -234,8 +234,8 @@ không được publish ra host trong Compose mặc định.
 ## DB-less và reload
 
 DB-less nghĩa là `KONG_DATABASE=off`; `kong.yml` mount read-only là declarative source of truth. Admin API cho phép GET
-để inspect entity đã load, nhưng entity CRUD qua Admin API không dùng được: thử POST tạo Service trong Step 7 trả HTTP
-`405`. Sửa YAML trên host **không** làm Kong runtime tự cập nhật. POC dùng `docker compose restart kong` để load lại
+để inspect entity đã load, nhưng entity CRUD qua Admin API không dùng được. Khi thử POST tạo Service trong lúc đánh giá
+TAD, Admin API trả HTTP `405`. Sửa YAML trên host **không** làm Kong runtime tự cập nhật. POC dùng `docker compose restart kong` để load lại
 file; sau đó kiểm tra Admin GET và smoke test. Không cần chuyển sang database mode.
 
 ## Ai chịu trách nhiệm việc gì?
@@ -291,7 +291,7 @@ hoặc `http://localhost:9102/__admin/requests`; đây là debug API local, khô
 | Sửa `kong.yml` là runtime tự cập nhật        | POC cần `docker compose restart kong` để load lại.                                        |
 | `localhost` trong container trỏ về máy Mac   | Nó trỏ về chính container; dùng Docker service name để gọi container khác.                |
 | Kong chuẩn hóa business response             | Backend mapping và tạo canonical body; Kong proxy body đó.                                |
-| TAD `packages/api/gateway` là Kong connector | Đó là RPC nội bộ TAD; [Step 7 evaluation](../tad-evaluation.md) chưa thấy Kong connector. |
+| TAD `packages/api/gateway` là Kong connector | Đó là RPC nội bộ TAD; [kết quả đánh giá](../tad-evaluation.md) chưa tìm thấy Kong connector. |
 
 ## Checklist
 

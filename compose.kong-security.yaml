@@ -1,0 +1,50 @@
+services:
+  payment-security-lab:
+    build:
+      context: ./services/payment-integration-service
+    environment:
+      SPRING_PROFILES_ACTIVE: gateway
+      PARTNERBRIDGE_CLIENT_TRUSTED_IDENTITY_REQUIRED: "true"
+      PARTNERBRIDGE_PROVIDER_A_BASE_URL: http://provider-a:8080
+      PARTNERBRIDGE_PROVIDER_B_BASE_URL: http://provider-b:8080
+    depends_on:
+      provider-a:
+        condition: service_healthy
+      provider-b:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 20s
+    networks:
+      - partner-bridge
+
+  kong-security-lab:
+    image: kong:3.9.3
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8300
+      KONG_ADMIN_LISTEN: 0.0.0.0:8301
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    volumes:
+      - ./gateways/kong/labs/security/kong.yml:/etc/kong/kong.yml:ro
+    ports:
+      - "8300:8300"
+      - "127.0.0.1:8301:8301"
+    depends_on:
+      payment-security-lab:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 15s
+    networks:
+      - partner-bridge

@@ -1,4 +1,4 @@
-# Kong Gateway POC (Step 6)
+# Kong Gateway DB-less POC
 
 Client → Kong → Payment Service → PROVIDER_A / PROVIDER_B.
 
@@ -18,9 +18,10 @@ The backend is reachable only on the Compose network. Its gateway profile uses
 `localhost`. It requires `X-Authenticated-Client-Id`; missing/invalid identity
 is rejected with `400` rather than falling back to `local-poc-client`. The
 default ID is for local/direct development outside the gateway profile only.
-The Spring profile configuration lives in the service at
-`services/payment-integration-service/src/main/resources/application-gateway.yml`;
-only Kong configuration and Kong-specific documentation live in this directory.
+Compose bật Spring profile `gateway` và truyền các cấu hình dành cho môi trường
+gateway qua biến môi trường. Cấu hình chung của service nằm tại
+`services/payment-integration-service/src/main/resources/application.yml`;
+thư mục này chỉ chứa cấu hình và tài liệu của Kong.
 
 ## Kong entities
 
