@@ -13,6 +13,11 @@ public interface BankHttpClient {
                                       @RequestHeader("Request-ID") String requestId,
                                       @PathVariable String accountId);
 
+    @GetExchange("/bank/v1/accounts/{accountId}/transactions")
+    ResponseEntity<String> getTransactions(@RequestHeader("X-Bank-Api-Key") String apiKey,
+                                           @RequestHeader("Request-ID") String requestId,
+                                           @PathVariable String accountId);
+
     @PostExchange(value = "/bank/v1/transfers", contentType = "application/json")
     ResponseEntity<String> createTransfer(@RequestHeader("X-Bank-Api-Key") String apiKey,
                                           @RequestHeader("Request-ID") String requestId,

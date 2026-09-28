@@ -11,6 +11,17 @@ status="$(curl -sS -o "$tmp_dir/account.json" -w '%{http_code}' \
 test "$status" = "200"
 grep -q '"accountId":"ACC-001"' "$tmp_dir/account.json"
 
+status="$(curl -sS -o "$tmp_dir/transactions.json" -w '%{http_code}' \
+  "$base_url/api/v1/accounts/ACC-001/transactions" -H "Request-ID: $request_id")"
+test "$status" = "200"
+grep -q '"transactionId":"TXN-001"' "$tmp_dir/transactions.json"
+
+status="$(curl -sS -o "$tmp_dir/summary.json" -w '%{http_code}' \
+  "$base_url/api/v1/accounts/ACC-001/summary" -H "Request-ID: $request_id")"
+test "$status" = "200"
+grep -q '"accountNo":"ACC-001"' "$tmp_dir/summary.json"
+grep -q '"transactionId":"TXN-001"' "$tmp_dir/summary.json"
+
 status="$(curl -sS -o "$tmp_dir/transfer.json" -w '%{http_code}' \
   "$base_url/api/v1/transfers" -H "Request-ID: $request_id" -H 'Content-Type: application/json' \
   -d '{"fromAccount":"ACC-001","toAccount":"ACC-002","amount":100000,"currency":"VND","reference":"ORDER-SUCCESS-001"}')"

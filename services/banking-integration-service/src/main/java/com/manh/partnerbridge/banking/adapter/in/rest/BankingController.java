@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Validated
 @RestController
 @RequestMapping("/api/v1")
@@ -28,6 +30,22 @@ public class BankingController {
     public BankAccountResponse getAccount(@PathVariable @NotBlank String accountId,
             HttpServletRequest servletRequest) {
         return BankAccountResponse.from(useCase.getAccount(accountId, requestId(servletRequest)));
+    }
+
+    @Operation(summary = "Get recent transactions from the external bank")
+    @GetMapping("/accounts/{accountId}/transactions")
+    public List<RecentTransactionResponse> getTransactions(@PathVariable @NotBlank String accountId,
+            HttpServletRequest servletRequest) {
+        return useCase.getTransactions(accountId, requestId(servletRequest)).stream()
+                .map(RecentTransactionResponse::from)
+                .toList();
+    }
+
+    @Operation(summary = "Get an account summary from the external bank")
+    @GetMapping("/accounts/{accountId}/summary")
+    public AccountSummaryResponse getAccountSummary(@PathVariable @NotBlank String accountId,
+            HttpServletRequest servletRequest) {
+        return AccountSummaryResponse.from(useCase.getAccountSummary(accountId, requestId(servletRequest)));
     }
 
     @Operation(summary = "Create a transfer at the external bank")

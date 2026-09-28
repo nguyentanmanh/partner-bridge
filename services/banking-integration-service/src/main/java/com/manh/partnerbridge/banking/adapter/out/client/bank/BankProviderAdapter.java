@@ -13,8 +13,10 @@ import com.manh.partnerbridge.banking.domain.exception.CommonErrorCode;
 import com.manh.partnerbridge.banking.domain.exception.ResourceNotFoundException;
 import com.manh.partnerbridge.banking.domain.model.BankAccount;
 import com.manh.partnerbridge.banking.domain.model.BankTransfer;
+import com.manh.partnerbridge.banking.domain.model.RecentTransaction;
 import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -50,6 +52,25 @@ public final class BankProviderAdapter implements BankProviderPort {
         if (body.transactionId() == null || body.transactionStatus() == null)
             throw invalidResponse(null);
         return new BankTransfer(body.transactionId(), body.transactionStatus());
+    }
+
+    @Override public List<RecentTransaction> getTransactions(String accountId, String requestId) {
+        ResponseEntity<String> response = call(() -> http.getTransactions(apiKey, requestId, accountId));
+        if (response.getStatusCode().value() == 404)
+            throw new ResourceNotFoundException(BankingErrorCode.ACCOUNT_NOT_FOUND);
+        requireSuccess(response);
+        BankTransactionsPayload body = read(response.getBody(), BankTransactionsPayload.class);
+        if (body.transactions() == null || body.transactions().stream().anyMatch(this::invalidTransaction))
+            throw invalidResponse(null);
+        return body.transactions().stream()
+                .map(item -> new RecentTransaction(item.transactionId(), item.amount(), item.currency(),
+                        item.transactionDate()))
+                .toList();
+    }
+
+    private boolean invalidTransaction(BankTransactionPayload item) {
+        return item == null || item.transactionId() == null || item.amount() == null
+                || item.currency() == null || item.transactionDate() == null;
     }
 
     private ResponseEntity<String> call(Call call) {

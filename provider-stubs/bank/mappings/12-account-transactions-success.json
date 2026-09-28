@@ -1,0 +1,28 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/bank/v1/accounts/ACC-001/transactions",
+    "headers": { "X-Bank-Api-Key": { "equalTo": "bank-local-key" } }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "transactions": [
+        {
+          "transactionId": "TXN-001",
+          "amount": -500000.00,
+          "currency": "VND",
+          "transactionDate": "2026-09-28T10:30:00Z"
+        },
+        {
+          "transactionId": "TXN-002",
+          "amount": 1000000.00,
+          "currency": "VND",
+          "transactionDate": "2026-09-27T09:15:00Z"
+        }
+      ]
+    }
+  }
+}

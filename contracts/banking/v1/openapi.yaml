@@ -61,6 +61,116 @@ paths:
         "504":
           $ref: "#/components/responses/GatewayTimeout"
 
+  /api/v1/accounts/{accountId}/summary:
+    get:
+      tags: [Accounts]
+      operationId: getBankAccountSummary
+      summary: Get an account summary
+      description: Aggregates canonical account information and recent transactions from banking providers.
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountId
+          in: path
+          required: true
+          description: Bank account identifier.
+          schema:
+            type: string
+            minLength: 1
+          example: ACC-001
+      responses:
+        "200":
+          description: Account summary retrieved.
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountSummary"
+              example:
+                account:
+                  accountNo: ACC-001
+                  balance: 10000000.00
+                recentTransactions:
+                  - transactionId: TXN-001
+                    amount: -500000.00
+                    currency: VND
+                    transactionDate: "2026-09-28T10:30:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Account not found (`BNK-ACCOUNT-001`).
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
+  /api/v1/accounts/{accountId}/transactions:
+    get:
+      tags: [Accounts]
+      operationId: getBankAccountTransactions
+      summary: Get recent account transactions
+      description: Retrieves recent canonical transactions for a bank account from the configured provider.
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/AcceptLanguage"
+        - name: accountId
+          in: path
+          required: true
+          description: Bank account identifier.
+          schema:
+            type: string
+            minLength: 1
+          example: ACC-001
+      responses:
+        "200":
+          description: Recent account transactions retrieved.
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentTransaction"
+              example:
+                - transactionId: TXN-001
+                  amount: -500000.00
+                  currency: VND
+                  transactionDate: "2026-09-28T10:30:00Z"
+                - transactionId: TXN-002
+                  amount: 1000000.00
+                  currency: VND
+                  transactionDate: "2026-09-27T09:15:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Account not found (`BNK-ACCOUNT-001`).
+          headers:
+            Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
   /api/v1/transfers:
     post:
       tags: [Transfers]
@@ -118,7 +228,7 @@ components:
     RequestId:
       name: Request-ID
       in: header
-      required: false
+      required: true
       description: Correlation identifier. The service generates one when omitted.
       schema:
         type: string
@@ -127,7 +237,7 @@ components:
     AcceptLanguage:
       name: Accept-Language
       in: header
-      required: false
+      required: true
       description: Language used for error messages.
       schema:
         type: string
@@ -158,6 +268,46 @@ components:
           pattern: "^[A-Z]{3}$"
         status:
           type: string
+
+    AccountSummary:
+      type: object
+      additionalProperties: false
+      required: [account, recentTransactions]
+      properties:
+        account:
+          $ref: "#/components/schemas/AccountSummaryAccount"
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentTransaction"
+
+    AccountSummaryAccount:
+      type: object
+      additionalProperties: false
+      required: [accountNo, balance]
+      properties:
+        accountNo:
+          type: string
+        balance:
+          type: number
+          format: decimal
+
+    RecentTransaction:
+      type: object
+      additionalProperties: false
+      required: [transactionId, amount, currency, transactionDate]
+      properties:
+        transactionId:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        transactionDate:
+          type: string
+          format: date-time
 
     CreateTransferRequest:
       type: object
